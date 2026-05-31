@@ -2,7 +2,7 @@
 *Program Headers e Segmentos: Como o Kernel Carrega seu Programa*
 
 
-> **No episódio anterior (kkkk)**: Volume 1 — vimos o que é um ELF, criamos e compilamos um `hello_64` (é um `hello_32`), e lemos o ELF Header byte a byte.
+> **No episódio anterior (kkkk)**: Volume 1 — vimos o que é um ELF, criamos e compilamos um `hello_64` (e um `hello_32`), e lemos o ELF Header byte a byte.
 >
 > **Ambiente utilizado**: Raspberry Pi 4, modelo:B, ARM64 (AArch64) OS 64-bit.
 
@@ -124,8 +124,8 @@ Antes de mergulhar em cada tipo de segmento, vamos entender as colunas da tabela
 
 ```
   Type           Offset             VirtAddr           PhysAddr
-                 FileSiz            MemSiz              Flags  Align
-  ────────────   ──────────────     ────────────────   ──────────────
+                 FileSiz            MemSiz             Flags  Align
+  ───────────  ───────────────  ──────────────  ──────────────
   LOAD           0x0000000000010000 0x0000000000010000 0x0000000000010000
                  0x00000000000001a4 0x00000000000001a4  R E    0x10000
 ```
@@ -167,17 +167,17 @@ PHDR  0x0000000000000040  0x0000000000000040  0x0000000000000040
 
 ```
 ┌───────────────────────────────────────────
-│  ELF Header (64 bytes)                            │
+│  ELF Header (64 bytes)                            
 │  ────────────────────                         │
 │  Program Header Table  ← PHDR aponta para aqui   │
 │  ├── Entry 0: PHDR                               │
 │  ├── Entry 1: INTERP                             │
 │  ├── Entry 2: LOAD                               │
 │  └── ...                                         │
-│                                                   │
-│  [ conteúdo das seções... ]                       │
-│                                                   │
-│  Section Header Table                             │
+│                                                   
+│  [ conteúdo das seções... ]                       
+│                                                   
+│  Section Header Table                             
 └───────────────────────────────────────────┘
 ```
 
@@ -200,9 +200,9 @@ INTERP  0x0000000000000238  0x0000000000000238  ...
 ```
 Arquivo ELF
 ┌─────────────────────────────────────────────
-│  ...                                               │
-│  Offset 0x238: /lib/ld-linux-aarch64.so.1\0        │
-│                ↑ 27 bytes de string ASCII + \0     │
+│  ...                                                │
+│  Offset 0x238: /lib/ld-linux-aarch64.so.1\0         │
+│                ↑ 27 bytes de string ASCII + \0      
 └─────────────────────────────────────────────
 ```
 
