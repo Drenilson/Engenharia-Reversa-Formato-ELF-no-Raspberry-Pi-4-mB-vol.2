@@ -297,8 +297,7 @@ Dynamic section at offset 0x20dd0 contains 27 entries:
 └──────────────────┴─────────────────────────────────────
 ```
 
-> **Importante**: O segmento DYNAMIC está **contido dentro** do último LOAD (o RW). Ele não é carregado separadamente — o kernel carrega o LOAD inteiro, e o dynamic linker então localiza a seção DYNAMIC dentro desse bloco já mapeado.
-
+> **Importante**: O segmento **DYNAMIC** não é mapeado como uma região independente de memória. Ele está localizado dentro do último segmento **LOAD** (aquele com permissões **RW**). Durante a execução do programa, o kernel mapeia integralmente esse segmento **LOAD**, e o *dynamic linker* utiliza as informações do cabeçalho do programa para localizar e interpretar a estrutura **DYNAMIC** já presente nessa área de memória.
 
 ## 4.5 GNU_STACK — Declaração sobre a stack
 
@@ -307,7 +306,7 @@ GNU_STACK  0x0000000000000000  0x0000000000000000  ...
            0x0000000000000000  0x0000000000000000   RW  0x10
 ```
 
-**O que é**: Uma declaração de política — diz ao kernel quais permissões a **stack** do processo deve ter.
+**O que é**: um segmento especial que não representa dados a serem carregados em memória. Sua função é informar ao kernel quais permissões devem ser aplicadas à **stack** do processo quando o programa for executado.
 
 ```
 GNU_STACK com flags RW  → stack tem permissão de leitura e escrita
