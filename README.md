@@ -13,6 +13,7 @@
 2. [O comando `readelf -l`](#2-o-comando-readelf--l)
 3. [Anatomia completa da saída](#3-anatomia-completa-da-saída)
 4. [Tipos de segmento — um por um](#4-tipos-de-segmento--um-por-um)
+   - PHDR — Program Header Table
 5. [FileSiz vs MemSiz — o mistério do .bss](#5-filesiz-vs-memsiz--o-mistério-do-bss)
 6. [Flags de permissão — R, W, E](#6-flags-de-permissão--r-w-e)
 7. [PIE vs no-PIE — endereços fixos vs aleatórios](#7-pie-vs-no-pie--endereços-fixos-vs-aleatórios)
