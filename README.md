@@ -2,9 +2,9 @@
 *Program Headers e Segmentos: Como o Kernel Carrega seu Programa*
 
 
-> **Pré-requisito**: Volume 1 — você já sabe o que é ELF, criou e compilou um `hello_64`, e leu o ELF Header byte a byte.
+> **No episódio anterior (kkkk)**: Volume 1 — vimos o que é um ELF, criamos e compilamos um `hello_64` (é um `hello_32`), e lemos o ELF Header byte a byte.
 >
-> **Ambiente**: Raspberry Pi 4, ARM64 (AArch64), Raspberry Pi OS 64-bit.
+> **Ambiente utilizado**: Raspberry Pi 4, modelo:B, ARM64 (AArch64) OS 64-bit.
 
 
 ## Sumário
