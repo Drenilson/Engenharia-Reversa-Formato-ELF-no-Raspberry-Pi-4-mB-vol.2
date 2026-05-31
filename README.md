@@ -352,7 +352,7 @@ Kernel carrega LOAD[3] (RW) ─────────────────�
                                      │
                               main() é chamado ──────────►
 
-Resultado: atacante não consegue sobrescrever a GOT para redirecionar chamadas
+Resultado: O atacante não consegue sobrescrever a GOT, pois ela se torna somente leitura antes do `main()` começar a executar.
 ```
 
 > **RELRO Parcial vs Total**: RELRO parcial (padrão) protege `.dynamic` e `.got`. RELRO total (`gcc -Wl,-z,relro,-z,now`) também protege a `.got.plt`. Para CTFs e análise de exploits, saber se RELRO é parcial ou total é fundamental.
