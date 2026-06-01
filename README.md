@@ -70,6 +70,17 @@ readelf -l hello_64
 
 > `readelf -l` e `readelf --segments` são idênticos. Use qual preferir.
 
+**Saída em português?** Se as colunas aparecerem como Desvio, EndVirtl, TamFich etc., seu sistema está usando locale PT-BR. Para seguir este guia com saída em inglês, use sempre:
+```
+LANG=C readelf -l hello_64
+```
+
+
+ATENÇÃO — Leia antes de comparar sua saída:
+A saída do readelf -l varia entre sistemas. Os valores exatos de offsets, tamanhos e até o número de segmentos podem ser diferentes dos mostrados aqui, dependendo de:
+
+
+
 Saída completa no Raspberry Pi 4 (ARM64):
 
 ```
