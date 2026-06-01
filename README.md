@@ -75,13 +75,30 @@ readelf -l hello_64
 LANG=C readelf -l hello_64
 ```
 
-
 ATENÇÃO — Leia antes de comparar sua saída:
-A saída do readelf -l varia entre sistemas. Os valores exatos de offsets, tamanhos e até o número de segmentos podem ser diferentes dos mostrados aqui, dependendo de:
+A saída do `readelf -l` varia entre sistemas. Os valores exatos de offsets, tamanhos e até o número de segmentos podem ser diferentes dos mostrados aqui, dependendo de:
+```
+┌──────────────────────────────────────────────────────────────────────────────────────
+│            FATOR            │                       EFEITO NA SAÍDA                                │
+├──────────────────────────────────────────────────────────────────────────────────────
+│  Versão do GCC              │ Pode gerar mais ou menos segmentos NOTE, GNU_EH_FRAME separado, etc. │
+├──────────────────────────────────────────────────────────────────────────────────────
+│  Versão do Raspberry Pi OS  │ Diferentes versões da toolchain produzem layouts distintos           │
+├──────────────────────────────────────────────────────────────────────────────────────
+│  Versão da glibc            │ Afeta segmentos relacionados a notas e propriedades                  │
+├──────────────────────────────────────────────────────────────────────────────────────
+│  Flags de compilação        │ -g, -O2, etc. mudam seções presentes e, consequentemente, segmentos  │
+└──────────────────────────────────────────────────────────────────────────────────────
+```
+**O que NÃO muda e é o foco de estudo:**
+- Os tipos de segmento (PHDR, INTERP, LOAD, DYNAMIC, GNU_STACK, GNU_RELRO) e seus papéis
+- O alinhamento dos LOADs em `0x10000` no ARM64
+- A presença de exatamente um INTERP apontando para `/lib/ld-linux-aarch64.so.1`
+- Os LOADs com flags `R`, `R E` e `RW` — sempre nessa separação
+- O `GNU_STACK` com `RW` (sem `E`) indicando NX habilitado
+Se sua saída tiver **mais segmentos NOTE, um GNU_EH_FRAME separado, ou um número diferente de entradas no mapeamento**, isso é completamente normal. Acompanhe o raciocínio, não os números.
 
-
-
-Saída completa no Raspberry Pi 4 (ARM64):
+**Saída de exemplo (Raspberry Pi 4, ARM64, GCC 12, Raspberry Pi OS Bookworm:**
 
 ```
 Elf file type is DYN (Position-Independent Executable file)
@@ -126,7 +143,7 @@ Program Headers:
    08     .init_array .fini_array .dynamic .got
 ```
 
-> **Atenção ao alinhamento**: No ARM64, o campo `Align` dos LOADs é `0x10000` (64 KB), não `0x1000` (4 KB) como no x86_64. Isso é o padrão do linker `ld` para aarch64. As páginas de memória física ainda são 4 KB, mas o linker reserva blocos de 64 KB para garantir compatibilidade com kernels que usam páginas maiores.
+> **Atenção ao alinhamento**: No ARM64, o campo Align dos LOADs é 0x10000 (64 KB), não 0x1000 (4 KB) como no x86_64. Isso é o padrão do linker ld para aarch64. As páginas de memória física ainda são 4 KB, mas o linker reserva blocos de 64 KB para garantir compatibilidade com kernels que usam páginas maiores.
 
 
 # 3. Anatomia completa da saída
