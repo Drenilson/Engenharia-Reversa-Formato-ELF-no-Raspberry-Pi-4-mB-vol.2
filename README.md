@@ -75,8 +75,7 @@ readelf -l hello_64
 LANG=C readelf -l hello_64
 ```
 
-ATENÇÃO — Leia antes de comparar sua saída:
-A saída do `readelf -l` varia entre sistemas. Os valores exatos de offsets, tamanhos e até o número de segmentos podem ser diferentes dos mostrados aqui, dependendo de:
+> **ATENÇÃO — Leia antes de comparar sua saída:** A saída do `readelf -l` varia entre sistemas. Os valores exatos de offsets, tamanhos e até o número de segmentos podem ser diferentes dos mostrados aqui, dependendo de:
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────
 │            FATOR            │                       EFEITO NA SAÍDA                                │
@@ -223,22 +222,20 @@ INTERP  0x0000000000000238  0x0000000000000238  ...
     [Requesting program interpreter: /lib/ld-linux-aarch64.so.1]
 ```
 
-**O que é**: Contém o caminho (string) do **dynamic linker** — o programa que vai carregar as bibliotecas `.so` que seu executável precisa.
+**O que é**: Abreviação de *Interpreter* é uma das primeiras seções de um binário ELF executável. Ela contém o caminho (string) do **dynamic linker** (também chamado de interpretador do programa), que será usado pelo kernel para carregar as bibliotecas `.so` que seu executável precisa.
 
 ```
 Arquivo ELF
 ┌─────────────────────────────────────────────
 │  ...                                                │
-│  Offset 0x238: /lib/ld-linux-aarch64.so.1\0         │
-│                ↑ 27 bytes de string ASCII + \0      
+│  Offset 0x238: /lib/ld-linux-aarch64.so.1\x00         │
+│                ↑ 27 bytes (string ASCII + null terminator)      
 └─────────────────────────────────────────────
 ```
 
-> **Prática**: veja o conteúdo bruto do INTERP com hexdump:
+> **Prática**: veja o conteúdo bruto do INTERP com `readelf -l`:
 > ```bash
-> hexdump -C hello_64 | grep -A1 "ld-linux"
-> # Ou diretamente pelo offset:
-> dd if=hello_64 bs=1 skip=$((0x238)) count=27 2>/dev/null | cat
+> readelf -l hello_64 | grep -A1 INTERP
 > ```
 
 **Por que isso existe?** Quando você executa `./hello_64`, o kernel lê o ELF, encontra o INTERP, e **delega** o trabalho ao dynamic linker. O kernel não sabe como resolver `libc.so.6` — esse é o trabalho do `ld-linux-aarch64.so.1`.
