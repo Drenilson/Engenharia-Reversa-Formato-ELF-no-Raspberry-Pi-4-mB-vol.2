@@ -358,7 +358,7 @@ Dynamic section at offset 0x20dd0 contains 27 entries:
 └──────────────────┴─────────────────────────────────────
 ```
 
-**Importante:* Como o segmento **DYNAMIC** é carregado
+**Importante:** Como o segmento **DYNAMIC** é carregado
 O segmento **DYNAMIC** não é mapeado pelo `kernel` como uma região independente na memória.
 Ele fica embutido dentro do último segmento **LOAD** que possui permissões `RW` (Read + Write).
 **Quando o programa é executado:**
@@ -377,11 +377,13 @@ GNU_STACK  0x0000000000000000  0x0000000000000000  ...
 **O que é**: O segmento GNU_STACK é um segmento especial que não contém código nem dados do programa (não tem dados para serem carregados em memória).
 Sua **única função** é informar ao `kernel` quais permissões de memória devem ser aplicadas à **stack** (pilha) do processo quando o programa for executado.
 
+```
 GNU_STACK com flags RW  → stack tem permissão de leitura e escrita
                           SEM execução → NX (No-eXecute) HABILITADO 
 
 GNU_STACK com flags RW**E** → stack é executável
                           COM execução → NX DESABILITADO (perigoso em produção)
+```
 
 > **Por que isso importa em segurança?** Antes da proteção **NX**, exploits clássicos de *buffer overflow* funcionavam assim:
  - Sobrescrever o endereço de retorno na **stack**;
@@ -390,15 +392,24 @@ GNU_STACK com flags RW**E** → stack é executável
 O `GNU_STACK` com flags `RW` ativa o **NX**(equivalente ao DEP no Windows), tornando a **stack** não executável.
 Se você encontrar um binário com `RWE`, ele permite execução na **stack** — isso é um grande sinal vermelho em análise de malware ou binários suspeitos.
 
+**Verificar se NX está habilitado:**
 ```bash
-# Verificar se NX está habilitado:
-readelf -l hello_64 | grep "GNU_STACK"
+readelf -l hello_64 | grep -A1 GNU_STACK
+
+# Resultados das Flags:
 # RW  → NX habilitado 
 # RWE → NX desabilitado 
-
-# Ou com checksec (se instalado):
-# checksec --file=hello_64
 ```
+
+**Saída típica (segura):**
+```
+GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000
+                 0x0000000000000000 0x0000000000000000  RW     0x10
+```
+
+**Regra prática de análise:**
+RW  → Comportamento normal e seguro.
+RWE → Binário possivelmente vulnerável ou compilado com flags antigas (`-z execstack`).
 
 
 ## 4.6 GNU_RELRO — Read-Only After Relocation
