@@ -269,9 +269,9 @@ Arquivo ELF
 ## 4.3 LOAD — O coração do programa
 
 Os segmentos **LOAD** são os mais importantes de um arquivo ELF.
-São eles que o kernel realmente carrega para a memória. Todo o resto (PHDR, INTERP, DYNAMIC, etc.) é apenas metadado.
+São eles que o `kernel` realmente carrega para a memória. Todo o resto (`PHDR`, `INTERP`, `DYNAMIC`, etc.) é apenas metadado.
 
-No nosso `hello_64` temos 4 segmentos LOAD:
+No nosso `hello_64` temos 4 segmentos **LOAD**:
 
 ```
 ┌────────────────────────────────────────────────────────────────
@@ -307,7 +307,7 @@ No nosso `hello_64` temos 4 segmentos LOAD:
 ────────────────────────────────────────────────────
 ```
 
-Resumidamente, Os segmentos LOAD representam as partes reais do programa que serão copiadas para a memória. O kernel usa as informações de Offset, VirtAddr, Filesz, Memsz e Flags para decidir como e onde carregar cada parte.
+Resumidamente, Os segmentos **LOAD** representam as partes reais do programa que serão copiadas para a memória. O `kernel` usa as informações de `Offset`, `VirtAddr`, `Filesz`, `Memsz` e `Flags` para decidir como e onde carregar cada parte.
 
 
 ## 4.4 DYNAMIC — Configuração do linker dinâmico
@@ -317,7 +317,7 @@ DYNAMIC  0x0000000000020dd0  0x0000000000030dd0  ...
          0x00000000000001e0  0x00000000000001e0   RW  0x8
 ```
 
-**O que é**: Uma tabela de pares `(tag, valor)` que o dynamic linker (`ld-linux-aarch64.so.1`) lê para saber o que fazer. É como um "manual de instruções" para o loader.
+**O que é**: A seção DYNAMIC é uma tabela de configurações que o dynamic linker (ld-linux-aarch64.so.1) lê para saber como carregar e inicializar o programa. É como um "manual de instruções" para o loader.
 
 ```bash
 # Ver o conteúdo do segmento DYNAMIC:
@@ -358,7 +358,14 @@ Dynamic section at offset 0x20dd0 contains 27 entries:
 └──────────────────┴─────────────────────────────────────
 ```
 
-> **Importante**: O segmento **DYNAMIC** não é mapeado como uma região independente de memória. Ele está localizado dentro do último segmento **LOAD** (aquele com permissões **RW**). Durante a execução do programa, o kernel mapeia integralmente esse segmento **LOAD**, e o *dynamic linker* utiliza as informações do cabeçalho do programa para localizar e interpretar a estrutura **DYNAMIC** já presente nessa área de memória.
+**Importante:* Como o segmento **DYNAMIC** é carregado
+O segmento **DYNAMIC** não é mapeado pelo `kernel` como uma região independente na memória.
+Ele fica embutido dentro do último segmento **LOAD** que possui permissões `RW` (Read + Write).
+**Quando o programa é executado:**
+O `kernel` mapeia esse segmento **LOAD** por completo na memória (com permissões `RW`).
+O dynamic linker (`ld-linux-aarch64.so.1`), usando as informações da tabela de `Program Headers`, localiza onde está a estrutura **DYNAMIC** dentro dessa região.
+A partir daí, ele lê todas as tags (`NEEDED`, `INIT`, `PLTGOT`, etc.) e realiza o trabalho de ligação dinâmica.
+> Em resumo: A seção **DYNAMIC** é o cérebro da ligação dinâmica. Ela contém todas as instruções de que o `linker` precisa para carregar bibliotecas, resolver símbolos e preencher tabelas (como `GOT` e `PLT`). Sem ela, o programa simplesmente não conseguiria rodar em modo dinâmico.
 
 ## 4.5 GNU_STACK — Declaração sobre a stack
 
