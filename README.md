@@ -374,15 +374,14 @@ GNU_STACK  0x0000000000000000  0x0000000000000000  ...
            0x0000000000000000  0x0000000000000000   RW  0x10
 ```
 
-**O que é**: um segmento especial que não representa dados a serem carregados em memória. Sua função é informar ao kernel quais permissões devem ser aplicadas à **stack** do processo quando o programa for executado.
+**O que é**: O segmento GNU_STACK é um segmento especial que não contém código nem dados do programa (não tem dados para serem carregados em memória).
+Sua **única função** é informar ao `kernel` quais permissões de memória devem ser aplicadas à **stack** (pilha) do processo quando o programa for executado.
 
-```
 GNU_STACK com flags RW  → stack tem permissão de leitura e escrita
                           SEM execução → NX (No-Execute) HABILITADO 
 
-GNU_STACK com flags RWE → stack é executável
+GNU_STACK com flags RW**E** → stack é executável
                           NX DESABILITADO (perigoso em produção)
-```
 
 > **Por que isso importa em segurança?** Exploits clássicos de buffer overflow injetavam shellcode na stack e desviavam a execução para lá. O NX (equivalente ao DEP no Windows) previne isso. Se você vir `RWE` aqui num binário suspeito — levanta a bandeira vermelha.
 
