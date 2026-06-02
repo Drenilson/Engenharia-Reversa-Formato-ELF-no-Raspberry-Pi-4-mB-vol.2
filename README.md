@@ -245,7 +245,7 @@ INTERP  0x0000000000000238  0x0000000000000238  ...
     [Requesting program interpreter: /lib/ld-linux-aarch64.so.1]
 ```
 
-**O que é**: Abreviação de *Interpreter* é uma das primeiras seções de um binário ELF executável. Ela contém o caminho (string) do **dynamic linker** (também chamado de interpretador do programa), que será usado pelo kernel para carregar as bibliotecas `.so` que seu executável precisa.
+**O que é**: Abreviação de *Interpreter*, é uma das primeiras seções de um binário ELF executável. Ela contém o caminho (string) do **dynamic linker** (também chamado de interpretador do programa), que será usado pelo kernel para carregar as bibliotecas `.so` que seu executável precisa.
 
 ```
 Arquivo ELF
@@ -268,7 +268,8 @@ Arquivo ELF
 
 ## 4.3 LOAD — O coração do programa
 
-Os segmentos `LOAD` são os mais importantes: são eles que o kernel realmente **copia para a memória**. Todo o resto é metadado.
+Os segmentos **LOAD** são os mais importantes de um arquivo ELF.
+São eles que o kernel realmente carrega para a memória. Todo o resto (PHDR, INTERP, DYNAMIC, etc.) é apenas metadado.
 
 No nosso `hello_64` temos 4 segmentos LOAD:
 
@@ -294,7 +295,19 @@ No nosso `hello_64` temos 4 segmentos LOAD:
 └────────────────────────────────────────────────────────────────┘
 ```
 
-> **Princípio de segurança**: cada segmento LOAD tem permissões bem definidas. Código (`R E`) nunca é gravável. Dados (`RW`) nunca são executáveis (quando NX está ativo). Isso é o **W^X** (Write XOR Execute) — uma das proteções fundamentais contra exploits.
+> **Princípio de segurança**: cada segmento LOAD tem permissões bem definidas. Código (`R E`) nunca é gravável. Dados (`RW`) nunca são executáveis (quando NX está ativo). Isso é o **W^X** (Write XOR Execute), uma das proteções fundamentais contra exploits.
+
+```
+Memória Virtual
+────────────────────────────────────
+0x000000   [ Segmento 0 - R ]     ← Metadados
+0x010000   [ Segmento 1 - R E ]   ← Código do programa (.text)
+0x020000   [ Segmento 2 - R ]     ← Dados somente leitura
+0x030dc0   [ Segmento 3 - RW ]    ← Dados modificáveis
+────────────────────────────────────
+```
+
+Resumidamente, Os segmentos LOAD representam as partes reais do programa que serão copiadas para a memória. O kernel usa as informações de Offset, VirtAddr, Filesz, Memsz e Flags para decidir como e onde carregar cada parte.
 
 
 ## 4.4 DYNAMIC — Configuração do linker dinâmico
