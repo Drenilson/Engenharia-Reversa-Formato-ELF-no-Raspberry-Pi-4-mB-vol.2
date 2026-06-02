@@ -185,32 +185,55 @@ Vamos dissecar cada linha da saída do `readelf -l`, como um médico legista exa
 
 ## 4.1 PHDR — Program Header Table
 
+A seção PHDR indica onde está localizada a tabela de Program Headers dentro do próprio arquivo ELF.
+
 ```
 PHDR  0x0000000000000040  0x0000000000000040  0x0000000000000040
       0x00000000000001f8  0x00000000000001f8   R   0x8
 ```
 
-**O que é**: Descreve a própria tabela de Program Headers. É o ELF dizendo: *"eu mesmo estou aqui dentro do arquivo."*
+**O que é**: É o ELF “apontando para si mesmo”.
+Ele diz: "A tabela de Program Headers começa neste offset do arquivo."
+
+**Por que isso existe?**
+O kernel e o dynamic linker precisam saber rapidamente:
+- Quantos segmentos (LOAD, INTERP, DYNAMIC, etc.) o programa tem;
+- Onde cada segmento começa no arquivo;
+- Quais são as permissões de memória (R, W, X);
+- Onde carregá-los na memória.
+A tabela PHDR é a "índice" principal do arquivo ELF
 
 ```
-┌───────────────────────────────────────────
-│  ELF Header (64 bytes)                            
-│  ────────────────────                         │
-│  Program Header Table  ← PHDR aponta para aqui   │
-│  ├── Entry 0: PHDR                               │
-│  ├── Entry 1: INTERP                             │
-│  ├── Entry 2: LOAD                               │
-│  └── ...                                         │
-│                                                   
-│  [ conteúdo das seções... ]                       
-│                                                   
-│  Section Header Table                             
-└───────────────────────────────────────────┘
+Arquivo ELF
+
++---------------------------------------------------+
+|                ELF Header (64 bytes)              |   ← Offset 0x00
++---------------------------------------------------+
+|                                                   |
+|               Program Header Table (PHDR)         |   ← Offset 0x40
+|   ┌───────────────────────────────────────────┐   |
+|   │ Entry 0 : PHDR     (esta tabela)          │   |
+|   │ Entry 1 : INTERP                          │   |
+|   │ Entry 2 : LOAD     (código + dados)       │   |
+|   │ Entry 3 : DYNAMIC                         │   |
+|   │ Entry 4 : NOTE                            │   |
+|   │ ...                                       │   |
+|   └───────────────────────────────────────────┘   |
+|                                                   |
+|          [ Conteúdo real do programa ]            |
+|                                                   |
++---------------------------------------------------+
+|           Section Header Table (opcional)         |
++---------------------------------------------------+
 ```
+> **Prática**: veja o conteúdo bruto do PHDR com `readelf -l`:
+> ```bash
+> readelf -l hello_64 | grep -A1 PHDR
+> ```
 
 - **Offset `0x40`** = logo após o ELF Header (que tem 64 bytes = `0x40`)
-- **Flag `R`** = somente leitura (faz sentido, ninguém deve modificar os headers)
-- **Não é carregado como código ou dado do programa** — existe para que o loader (e o próprio programa, se necessário) saiba onde está a tabela
+- **Flag `R`** = somente leitura (faz sentido, ninguém deve modificar os headers (cabeçalhos))
+- **Não é carregado como código ou dado do programa**, mas sim como metadados para o loader
 
 ---
 
