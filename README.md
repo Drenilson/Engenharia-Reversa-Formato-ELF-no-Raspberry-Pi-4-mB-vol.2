@@ -385,7 +385,7 @@ GNU_STACK com flags RW**E** → stack é executável
                           COM execução → NX DESABILITADO (perigoso em produção)
 ```
 
-> **Por que isso importa em segurança?** Antes da proteção **NX**, exploits clássicos de *buffer overflow* funcionavam assim:
+**Por que isso importa em segurança?** Antes da proteção **NX**, exploits clássicos de *buffer overflow* funcionavam assim:
  - Sobrescrever o endereço de retorno na **stack**;
  - Injetar shellcode na própria stack;
  - Redirecionar a execução para o shellcode.
@@ -395,21 +395,21 @@ Se você encontrar um binário com `RWE`, ele permite execução na **stack** �
 **Verificar se NX está habilitado:**
 ```bash
 readelf -l hello_64 | grep -A1 GNU_STACK
-
-# Resultados das Flags:
-# RW  → NX habilitado 
-# RWE → NX desabilitado 
 ```
+
+**Resultados das Flags:**
+ - RW  → NX habilitado 
+ - RWE → NX desabilitado 
 
 **Saída típica (segura):**
 ```
 GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000
-                 0x0000000000000000 0x0000000000000000  RW     0x10
+               0x0000000000000000 0x0000000000000000  RW     0x10
 ```
 
 **Regra prática de análise:**
-RW  → Comportamento normal e seguro.
-RWE → Binário possivelmente vulnerável ou compilado com flags antigas (`-z execstack`).
+ - RW  → Comportamento normal e seguro.
+ - RWE → Binário possivelmente vulnerável ou compilado com flags antigas (`-z execstack`).
 
 
 ## 4.6 GNU_RELRO — Read-Only After Relocation
