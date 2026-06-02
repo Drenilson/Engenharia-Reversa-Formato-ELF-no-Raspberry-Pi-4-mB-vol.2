@@ -211,14 +211,14 @@ Arquivo ELF
 +---------------------------------------------------+
 |                                                   |
 |               Program Header Table (PHDR)         |   ← Offset 0x40
-|   ┌───────────────────────────────────────────┐   |
+|   ┌─────────────────────────────────────   |
 |   │ Entry 0 : PHDR     (esta tabela)          │   |
 |   │ Entry 1 : INTERP                          │   |
 |   │ Entry 2 : LOAD     (código + dados)       │   |
 |   │ Entry 3 : DYNAMIC                         │   |
 |   │ Entry 4 : NOTE                            │   |
 |   │ ...                                       │   |
-|   └───────────────────────────────────────────┘   |
+|   └─────────────────────────────────────   |
 |                                                   |
 |          [ Conteúdo real do programa ]            |
 |                                                   |
@@ -249,11 +249,11 @@ INTERP  0x0000000000000238  0x0000000000000238  ...
 
 ```
 Arquivo ELF
-┌─────────────────────────────────────────────
-│  ...                                                │
-│  Offset 0x238: /lib/ld-linux-aarch64.so.1\x00         │
+┌───────────────────────────────────────────────────
+│  ...                                                       │
+│  Offset 0x238: /lib/ld-linux-aarch64.so.1\x00              │
 │                ↑ 27 bytes (string ASCII + null terminator)      
-└─────────────────────────────────────────────
+└───────────────────────────────────────────────────
 ```
 
 > **Prática**: veja o conteúdo bruto do INTERP com `readelf -l`:
@@ -281,7 +281,7 @@ No nosso `hello_64` temos 4 segmentos LOAD:
 ├────────────────────────────────────────────────────────────────│
 │  [0] │  0x000000    │  0x000000    │   R     │  .interp, .note.*,      
 │      │              │              │         │  .dynsym, .dynstr,      
-│      │              │              │         │  .gnu.hash, .rela.*     
+│      │              │              │         │  .gnu.hash, .rela.*        
 ├────────────────────────────────────────────────────────────────│
 │  [1] │  0x010000    │  0x010000    │   R E   │  .init, .plt, .text,   
 │      │              │              │         │  .fini   ← CÓDIGO       
@@ -298,13 +298,13 @@ No nosso `hello_64` temos 4 segmentos LOAD:
 > **Princípio de segurança**: cada segmento LOAD tem permissões bem definidas. Código (`R E`) nunca é gravável. Dados (`RW`) nunca são executáveis (quando NX está ativo). Isso é o **W^X** (Write XOR Execute), uma das proteções fundamentais contra exploits.
 
 ```
-Memória Virtual
-────────────────────────────────────
+ Memória Virtual
+────────────────────────────────────────────────────
 0x000000   [ Segmento 0 - R ]     ← Metadados
 0x010000   [ Segmento 1 - R E ]   ← Código do programa (.text)
 0x020000   [ Segmento 2 - R ]     ← Dados somente leitura
 0x030dc0   [ Segmento 3 - RW ]    ← Dados modificáveis
-────────────────────────────────────
+────────────────────────────────────────────────────
 ```
 
 Resumidamente, Os segmentos LOAD representam as partes reais do programa que serão copiadas para a memória. O kernel usa as informações de Offset, VirtAddr, Filesz, Memsz e Flags para decidir como e onde carregar cada parte.
