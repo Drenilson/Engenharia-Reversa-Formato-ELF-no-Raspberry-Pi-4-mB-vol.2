@@ -263,7 +263,7 @@ Arquivo ELF
 
 **Por que isso existe?** Quando você executa `./hello_64`, o kernel lê o ELF, encontra o INTERP, e **delega** o trabalho ao dynamic linker. O kernel não sabe como resolver `libc.so.6` — esse é o trabalho do `ld-linux-aarch64.so.1`.
 
-> **Curiosidade de reversing**: malwares Linux às vezes modificam o INTERP para apontar para um "loader falso" que injeta código antes de chamar o programa real. Verificar se o INTERP é o esperado é uma etapa de análise de binários suspeitos.
+> **Curiosidade de reversing**: malwares Linux às vezes modificam o INTERP para apontar para um "loader falso" que injeta código antes de chamar o programa real. Verificar se o INTERP é realmente o esperado é uma etapa que compõe a análise de binários suspeitos.
 
 
 ## 4.3 LOAD — O coração do programa
@@ -317,10 +317,10 @@ DYNAMIC  0x0000000000020dd0  0x0000000000030dd0  ...
          0x00000000000001e0  0x00000000000001e0   RW  0x8
 ```
 
-**O que é**: A seção DYNAMIC é uma tabela de configurações que o dynamic linker (ld-linux-aarch64.so.1) lê para saber como carregar e inicializar o programa. É como um "manual de instruções" para o loader.
+**O que é**: A seção **DYNAMIC** é uma tabela de configurações que o **dynamic linker** (ld-linux-aarch64.so.1) lê para saber como carregar e inicializar o programa. É como um "manual de instruções" para o loader.
 
+Veja o conteúdo do segmento **DYNAMIC** com `readelf -d`:
 ```bash
-# Ver o conteúdo do segmento DYNAMIC:
 readelf -d hello_64
 ```
 
