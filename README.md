@@ -358,14 +358,16 @@ Dynamic section at offset 0x20dd0 contains 27 entries:
 └──────────────────┴─────────────────────────────────────
 ```
 
-**Importante:** Como o segmento **DYNAMIC** é carregado
+**Importante:** Como o segmento **DYNAMIC** é carregado?
 O segmento **DYNAMIC** não é mapeado pelo `kernel` como uma região independente na memória.
 Ele fica embutido dentro do último segmento **LOAD** que possui permissões `RW` (Read + Write).
-**Quando o programa é executado:**
+
+**Quando o programa é executado?**
 O `kernel` mapeia esse segmento **LOAD** por completo na memória (com permissões `RW`).
 O dynamic linker (`ld-linux-aarch64.so.1`), usando as informações da tabela de `Program Headers`, localiza onde está a estrutura **DYNAMIC** dentro dessa região.
 A partir daí, ele lê todas as tags (`NEEDED`, `INIT`, `PLTGOT`, etc.) e realiza o trabalho de ligação dinâmica.
-> Em resumo: A seção **DYNAMIC** é o cérebro da ligação dinâmica. Ela contém todas as instruções de que o `linker` precisa para carregar bibliotecas, resolver símbolos e preencher tabelas (como `GOT` e `PLT`). Sem ela, o programa simplesmente não conseguiria rodar em modo dinâmico.
+
+> Em resumo, a seção **DYNAMIC** é o cérebro da ligação dinâmica. Ela contém todas as instruções de que o `linker` precisa para carregar bibliotecas, resolver símbolos e preencher tabelas (como `GOT` e `PLT`). Sem ela, o programa simplesmente não conseguiria rodar em modo dinâmico.
 
 ## 4.5 GNU_STACK — Declaração sobre a stack
 
@@ -385,12 +387,13 @@ GNU_STACK com flags RW**E** → stack é executável
                           COM execução → NX DESABILITADO (perigoso em produção)
 ```
 
-**Por que isso importa em segurança?** Antes da proteção **NX**, exploits clássicos de *buffer overflow* funcionavam assim:
+**Por que isso importa em segurança?**
+Antes da proteção **NX**, exploits clássicos de *buffer overflow* funcionavam assim:
  1. Sobrescrever o endereço de retorno na **stack**;
  2. Injetar shellcode na própria stack;
  3. Redirecionar a execução para o shellcode.
-O `GNU_STACK` com flags `RW` ativa o **NX**(equivalente ao DEP no Windows), tornando a **stack** não executável.
-Se você encontrar um binário com `RWE`, ele permite execução na **stack** — isso é um grande sinal vermelho em análise de malware ou binários suspeitos.
+O `GNU_STACK` com flags `RW` ativa o **NX** (equivalente ao DEP no Windows), tornando a **stack** não executável.
+Se você encontrar um binário com `RWE`, ele permite execução na **stack** e isso é um grande sinal vermelho em análise de malware ou binários suspeitos.
 
 **Verificar se NX está habilitado:**
 ```bash
@@ -398,8 +401,8 @@ readelf -l hello_64 | grep -A1 GNU_STACK
 ```
 
 **Resultados das Flags:**
- - RW  → NX habilitado 
- - RWE → NX desabilitado 
+- RW  → NX habilitado 
+- RWE → NX desabilitado 
 
 **Saída típica (segura):**
 ```
@@ -408,8 +411,8 @@ GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000
 ```
 
 **Regra prática de análise:**
- - RW  → Comportamento normal e seguro.
- - RWE → Binário possivelmente vulnerável ou compilado com flags antigas (`-z execstack`).
+- RW  → Comportamento normal e seguro.
+- RWE → Binário possivelmente vulnerável ou compilado com flags antigas (`-z execstack`).
 
 
 ## 4.6 GNU_RELRO — Read-Only After Relocation
@@ -426,7 +429,7 @@ Durante o carregamento do programa:
  3. Depois de terminar, ele chama `mprotect()` para mudar a permissão para `R` (Read-Only).
 Isso impede que um atacante sobrescreva essas tabelas importantes mesmo que consiga uma vulnerabilidade de escrita arbitrária.
 
-Em poucas palavras, o **GNU_RELRO** transforma partes críticas da memória (`RW`) em somente-leitura (`R`) depois que o linker termina as relocações. É uma das proteções mais importantes contra redirecionamento de fluxo (control-flow hijacking).
+> Em poucas palavras, o **GNU_RELRO** transforma partes críticas da memória (`RW`) em somente-leitura (`R`) depois que o linker termina as relocações. É uma das proteções mais importantes contra redirecionamento de fluxo (control-flow hijacking).
 
 ```
 Linha do tempo de um processo com RELRO:
@@ -444,10 +447,10 @@ Kernel carrega LOAD[3] (RW) ─────────────────�
 Resultado: O atacante não consegue sobrescrever a GOT, pois ela se torna somente leitura antes do `main()` começar a executar.
 ```
 
-> **RELRO Parcial vs Total**: 
-> **RELRO Parcial** (padrão do `gcc`): Protege as seções `.dynamic` e parte da `.got`. Seu nível de proteção é **Médio**.
->**RELRO Total** (Full RELRO): Protege as seções `.dynamic`, `.got` (por completo) e `.got.plt`. Seu nível de proteção é **Alto**.
-> Para CTFs e análise de exploits, saber se **RELRO** é **parcial** ou **total** é fundamental.
+**RELRO Parcial vs Total**:
+**RELRO Parcial** (padrão do `gcc`): Protege as seções `.dynamic` e parte da `.got`. Seu nível de proteção é **Médio**.
+**RELRO Total** (Full RELRO): Protege as seções `.dynamic`, `.got` (por completo) e `.got.plt`. Seu nível de proteção é **Alto**.
+Para CTFs e análise de exploits, saber se **RELRO** é **parcial** ou **total** é fundamental.
 
 
 ## 4.7 NOTE — Metadados opcionais
@@ -477,23 +480,40 @@ As notas mais comuns são:
 Tem tamanho pequeno (geralmente poucas dezenas de bytes).
 - É do tipo 'PT_NOTE' na tabela de Program Headers.
 
-**Ver todas as notas:**
-```bash
+
+**Ver o conteúdo detalhado das notas (recomendado)**
+```
 readelf -n hello_64
 ```
 
-**Ou ver os Program Headers e filtrar NOTE**
-```
-readelf -l hello_64 | grep -A1 NOTE
-```
-
-**Exemplo de saída**:
+**Saída obtida:**
 ```
 Displaying notes found in: .note.gnu.build-id
   Owner                 Data size  Description
   GNU                   0x00000014  NT_GNU_BUILD_ID
-    Build ID: a1b2c3d4e5f67890123456789abcdef01234567
+    Build ID: 15945e6c12aba654bf8e5ef000737a5a1be29508
+
+Displaying notes found in: .note.ABI-tag
+  Owner                 Data size  Description
+  GNU                   0x00000010  NT_GNU_ABI_TAG
+    OS: Linux, ABI: 3.7.0
 ```
+
+
+**Ver apenas os Program Headers do tipo NOTE**
+```
+readelf -l hello_64 | grep -A1 NOTE
+```
+
+**Saída esperada:**
+```
+NOTE           0x0000000000000270 0x0000000000000270 0x0000000000000270
+               0x0000000000000024 0x0000000000000024  R      0x4
+
+NOTE           0x00000000000008fc 0x00000000000008fc 0x00000000000008fc
+               0x0000000000000020 0x0000000000000020  R      0x4
+```
+
 
 # 5. FileSiz vs MemSiz — o mistério do .bss
 
