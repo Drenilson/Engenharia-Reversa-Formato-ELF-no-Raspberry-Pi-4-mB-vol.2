@@ -457,17 +457,43 @@ NOTE  0x0000000000000254  0x0000000000000254  ...
       0x0000000000000024  0x0000000000000024   R  0x4
 ```
 
-**O que é**: Informações extras não-críticas para execução. Podem conter:
+**O que é**: A seção NOTE (ou Program Header do tipo `PT_NOTE`) é usada para armazenar informações extras que não são essenciais para a execução do programa.
+Ela funciona como um “campo de notas” do arquivo ELF.
 
-- **`gnu.build-id`**: hash SHA1 único deste build (útil para debug e símbolos remotos)
-- **`ABI-tag`**: versão mínima do kernel Linux necessária
-- **`gnu.property`**: propriedades de arquitetura (ex: suporte a BTI no ARM64)
+**O que ela contém?**
+As notas mais comuns são:
+- **gnu.build-id** → Um hash SHA1 único gerado durante a compilação.
+> Útil para identificar exatamente qual versão do binário é essa (muito usado em debug e símbolos remotos).
 
+- **ABI-tag** → Informa a versão mínima do kernel Linux / ABI necessária para rodar o programa.
+
+- **gnu.property** → Propriedades específicas da arquitetura (ex: suporte a BTI no ARM64, CET no x86, etc.).
+
+- **Outras notas**: informações do compilador, versão do toolchain, etc.
+
+**Características Importantes**
+- É **opcional** (o programa funciona normalmente sem ela).
+- Não afeta o desempenho da execução.
+Tem tamanho pequeno (geralmente poucas dezenas de bytes).
+- É do tipo 'PT_NOTE' na tabela de Program Headers.
+
+**Ver todas as notas:**
 ```bash
-# Ver as notas:
 readelf -n hello_64
 ```
 
+**Ou ver os Program Headers e filtrar NOTE**
+```
+readelf -l hello_64 | grep -A1 NOTE
+```
+
+**Exemplo de saída**:
+```
+Displaying notes found in: .note.gnu.build-id
+  Owner                 Data size  Description
+  GNU                   0x00000014  NT_GNU_BUILD_ID
+    Build ID: a1b2c3d4e5f67890123456789abcdef01234567
+```
 
 # 5. FileSiz vs MemSiz — o mistério do .bss
 
