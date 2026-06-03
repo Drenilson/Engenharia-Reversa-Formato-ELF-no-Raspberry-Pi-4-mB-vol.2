@@ -419,7 +419,14 @@ GNU_RELRO  0x0000000000020dc0  0x0000000000030dc0  ...
            0x0000000000000240  0x0000000000000240   R  0x1
 ```
 
-**O que é**: Marca uma região que começa como `RW` (durante o carregamento), mas é **remarcada como `R` (somente leitura)** depois que o dynamic linker termina de fazer as relocações.
+**O que é**: O segmento **GNU_RELRO** (Relocation Read-Only) é uma proteção de segurança que torna certas regiões da memória **somente-leitura** após o **dynamic linker** terminar seu trabalho.
+Durante o carregamento do programa:
+- 1. O kernel carrega a região como `RW` (Read + Write).
+- 2. O **dynamic linker** (`ld.so`) preenche as tabelas de relocação (`.got`, `.dynamic`, etc.).
+- 3. Depois de terminar, ele chama `mprotect()` para mudar a permissão para `R` (Read-Only).
+Isso impede que um atacante sobrescreva essas tabelas importantes mesmo que consiga uma vulnerabilidade de escrita arbitrária.
+
+Marca uma região que começa como `RW` (durante o carregamento), mas é **remarcada como `R` (somente leitura)** depois que o dynamic linker termina de fazer as relocações.
 
 ```
 Linha do tempo de um processo com RELRO:
@@ -437,7 +444,10 @@ Kernel carrega LOAD[3] (RW) ─────────────────�
 Resultado: O atacante não consegue sobrescrever a GOT, pois ela se torna somente leitura antes do `main()` começar a executar.
 ```
 
-> **RELRO Parcial vs Total**: RELRO parcial (padrão) protege `.dynamic` e `.got`. RELRO total (`gcc -Wl,-z,relro,-z,now`) também protege a `.got.plt`. Para CTFs e análise de exploits, saber se RELRO é parcial ou total é fundamental.
+> **RELRO Parcial vs Total**: 
+> **RELRO parcial** (padrão) protege `.dynamic` e `.got`. Seu comando de compilação (padrão) é `gcc` e o seu nível de proteção é **Médio**.
+> **RELRO total** também protege a `.dynamic', `.got` e `.got.plt`. Seu comando de compilação é `gcc -Wl,-z,relro,-z,now` e seu nível de proteção é **Alto**.
+> Para CTFs e análise de exploits, saber se **RELRO** é **parcial** ou **total** é fundamental.
 
 
 ## 4.7 NOTE — Metadados opcionais
