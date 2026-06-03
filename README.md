@@ -386,9 +386,9 @@ GNU_STACK com flags RW**E** → stack é executável
 ```
 
 **Por que isso importa em segurança?** Antes da proteção **NX**, exploits clássicos de *buffer overflow* funcionavam assim:
- - Sobrescrever o endereço de retorno na **stack**;
- - Injetar shellcode na própria stack;
- - Redirecionar a execução para o shellcode.
+ 1. Sobrescrever o endereço de retorno na **stack**;
+ 2. Injetar shellcode na própria stack;
+ 3. Redirecionar a execução para o shellcode.
 O `GNU_STACK` com flags `RW` ativa o **NX**(equivalente ao DEP no Windows), tornando a **stack** não executável.
 Se você encontrar um binário com `RWE`, ele permite execução na **stack** — isso é um grande sinal vermelho em análise de malware ou binários suspeitos.
 
@@ -421,12 +421,12 @@ GNU_RELRO  0x0000000000020dc0  0x0000000000030dc0  ...
 
 **O que é**: O segmento **GNU_RELRO** (Relocation Read-Only) é uma proteção de segurança que torna certas regiões da memória **somente-leitura** após o **dynamic linker** terminar seu trabalho.
 Durante o carregamento do programa:
-- 1. O kernel carrega a região como `RW` (Read + Write).
-- 2. O **dynamic linker** (`ld.so`) preenche as tabelas de relocação (`.got`, `.dynamic`, etc.).
-- 3. Depois de terminar, ele chama `mprotect()` para mudar a permissão para `R` (Read-Only).
+ 1. O kernel carrega a região como `RW` (Read + Write).
+ 2. O **dynamic linker** (`ld.so`) preenche as tabelas de relocação (`.got`, `.dynamic`, etc.).
+ 3. Depois de terminar, ele chama `mprotect()` para mudar a permissão para `R` (Read-Only).
 Isso impede que um atacante sobrescreva essas tabelas importantes mesmo que consiga uma vulnerabilidade de escrita arbitrária.
 
-Marca uma região que começa como `RW` (durante o carregamento), mas é **remarcada como `R` (somente leitura)** depois que o dynamic linker termina de fazer as relocações.
+Em poucas palavras, o **GNU_RELRO** transforma partes críticas da memória (`RW`) em somente-leitura (`R`) depois que o linker termina as relocações. É uma das proteções mais importantes contra redirecionamento de fluxo (control-flow hijacking).
 
 ```
 Linha do tempo de um processo com RELRO:
@@ -445,8 +445,8 @@ Resultado: O atacante não consegue sobrescrever a GOT, pois ela se torna soment
 ```
 
 > **RELRO Parcial vs Total**: 
-> **RELRO parcial** (padrão) protege `.dynamic` e `.got`. Seu comando de compilação (padrão) é `gcc` e o seu nível de proteção é **Médio**.
-> **RELRO total** também protege a `.dynamic', `.got` e `.got.plt`. Seu comando de compilação é `gcc -Wl,-z,relro,-z,now` e seu nível de proteção é **Alto**.
+> **RELRO Parcial** (padrão do `gcc`): Protege as seções `.dynamic` e parte da `.got`. Seu nível de proteção é **Médio**.
+>**RELRO Total** (Full RELRO): Protege as seções `.dynamic`, `.got` (por completo) e `.got.plt`. Seu nível de proteção é **Alto**.
 > Para CTFs e análise de exploits, saber se **RELRO** é **parcial** ou **total** é fundamental.
 
 
