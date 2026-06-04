@@ -574,7 +574,6 @@ O kernel, ao carregar o programa, faz o seguinte:
 - Zera automaticamente essa área extra (a .bss).
 
 
-```
 
 ```
 ARQUIVO EM DISCO:                    MEMÓRIA APÓS CARREGAMENTO:
@@ -593,6 +592,12 @@ ARQUIVO EM DISCO:                    MEMÓRIA APÓS CARREGAMENTO:
 
 > **Isso economiza espaço em disco**: um binário com `int buffer[1000000];` global não precisará de 4 MB no arquivo, apenas uma entrada no .bss dizendo "reserve 4 MB de zeros aqui".
 
+
+**Resumo:**
+FileSiz = o que realmente existe no arquivo.
+MemSiz = o que deve existir na memória (FileSiz + tamanho do .bss).
+O kernel zera automaticamente a .bss durante o carregamento.
+Essa é uma das otimizações mais bonitas do formato ELF.
 
 # 6. Flags de permissão — R, W, E
 
