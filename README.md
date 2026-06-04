@@ -641,6 +641,12 @@ Combinações mais comuns:
  - `rw-` (equivalente a RW)
  - `r--` (equivalente a R)
 
+**Eles apontam para a mesma coisa**, apenas escrevem de forma diferente.
+
+> **Dica prática:**
+- Use `readelf` para estudar a estrutura do ELF (mais limpo e fácil de ler).
+- Use `objdump` quando quiser desmontar o código assembly.
+
 **Exemplo prático:**
 ```bash
 // readelf: flags com letras maiúsculas, espaço entre presentes
@@ -650,7 +656,7 @@ readelf -l hello_64 | grep Flags
 objdump -p hello_64 | grep flags
 ```
 
-### Como as flags se traduzem em proteções de memória
+### Como as flags de `readelf' se traduzem em proteções de memória
 
 ```
 Flag ELF    →   Proteção mmap    →   syscall mprotect
