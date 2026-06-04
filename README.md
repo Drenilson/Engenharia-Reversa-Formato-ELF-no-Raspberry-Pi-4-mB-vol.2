@@ -28,6 +28,7 @@
 10. [Exercícios práticos](#10-exercícios-práticos)
 11. [Recapitulação e próximos passos](#11-recapitulação-e-próximos-passos)
 
+---
 
 # 1. Duas visões do mesmo arquivo
 
@@ -58,6 +59,7 @@ Um SEGMENTO pode conter várias SEÇÕES.
 Um SEGMENTO é a "embalagem de entrega"; as seções são o "conteúdo".
 ```
 
+---
 
 # 2. O comando `readelf -l`
 
@@ -71,7 +73,7 @@ readelf -l hello_64
 > `readelf -l` e `readelf --segments` são idênticos. Use qual preferir.
 
 **Saída em português?** Se as colunas aparecerem como Desvio, EndVirtl, TamFich etc., seu sistema está usando locale PT-BR. Para seguir este guia com saída em inglês, use sempre:
-```
+```bash
 LANG=C readelf -l hello_64
 ```
 
@@ -99,7 +101,7 @@ Se sua saída tiver **mais segmentos NOTE, um GNU_EH_FRAME separado, ou um núme
 
 **Saída de exemplo (Raspberry Pi 4, ARM64, GCC 12, Raspberry Pi OS Bookworm:**
 
-```
+```bash
 Elf file type is DYN (Position-Independent Executable file)
 Entry point 0x640
 There are 9 program headers, starting at offset 64
@@ -144,6 +146,7 @@ Program Headers:
 
 > **Atenção ao alinhamento**: No ARM64, o campo Align dos LOADs é 0x10000 (64 KB), não 0x1000 (4 KB) como no x86_64. Isso é o padrão do linker ld para aarch64. As páginas de memória física ainda são 4 KB, mas o linker reserva blocos de 64 KB para garantir compatibilidade com kernels que usam páginas maiores.
 
+---
 
 # 3. Anatomia completa da saída
 
@@ -226,6 +229,7 @@ Arquivo ELF
 |           Section Header Table (opcional)         |
 +---------------------------------------------------+
 ```
+
 > **Prática**: veja o conteúdo bruto do PHDR com `readelf -l`:
 > ```bash
 > readelf -l hello_64 | grep -A1 PHDR
@@ -265,6 +269,7 @@ Arquivo ELF
 
 > **Curiosidade de reversing**: malwares Linux às vezes modificam o INTERP para apontar para um "loader falso" que injeta código antes de chamar o programa real. Verificar se o INTERP é realmente o esperado é uma etapa que compõe a análise de binários suspeitos.
 
+---
 
 ## 4.3 LOAD — O coração do programa
 
@@ -309,6 +314,7 @@ No nosso `hello_64` temos 4 segmentos **LOAD**:
 
 Resumidamente, s segmentos **LOAD** representam as partes reais do programa que serão copiadas para a memória. O `kernel` usa as informações de `Offset`, `VirtAddr`, `Filesz`, `Memsz` e `Flags` para decidir como e onde carregar cada parte.
 
+---
 
 ## 4.4 DYNAMIC — Configuração do linker dinâmico
 
@@ -417,6 +423,7 @@ GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000
 - RW  → Comportamento normal e seguro.
 - RWE → Binário possivelmente vulnerável ou compilado com flags antigas (`-z execstack`).
 
+---
 
 ## 4.6 GNU_RELRO — Read-Only After Relocation
 
@@ -461,6 +468,7 @@ Resultado: O atacante não consegue sobrescrever a GOT, pois ela se torna soment
 
 Para CTFs e análise de exploits, saber se **RELRO** é **parcial** ou **total** é fundamental.
 
+---
 
 ## 4.7 NOTE — Metadados opcionais
 
@@ -525,6 +533,7 @@ NOTE           0x00000000000008fc 0x00000000000008fc 0x00000000000008fc
                0x0000000000000020 0x0000000000000020  R      0x4
 ```
 
+---
 
 # 5. FileSiz vs MemSiz — o mistério do .bss
 
@@ -582,7 +591,7 @@ O kernel, ao carregar o programa, faz o seguinte:
 
 
 ```
-ARQUIVO EM DISCO:                    MEMÓRIA APÓS CARREGAMENTO:
+   ARQUIVO EM DISCO:                 MEMÓRIA APÓS CARREGAMENTO:
 ┌──────────────────               ┌────────────────────
 │ .init_array        │               │ .init_array           │
 │ .fini_array        │     mmap()    │ .fini_array           │
@@ -590,7 +599,7 @@ ARQUIVO EM DISCO:                    MEMÓRIA APÓS CARREGAMENTO:
 │ .got               │               │ .got                  │
 │ .data              │               │ .data                 │
 └──────────────────               │ .bss  ← 0x00 0x00    │
-   FileSiz = 0x268                   │       ← 0x00 0x00     │
+    FileSiz = 0x268                           ← 0x00 0x00     
                                      └────────────────────
                                         MemSiz = 0x270
                                      (8 bytes extras = zeros)
@@ -606,6 +615,7 @@ ARQUIVO EM DISCO:                    MEMÓRIA APÓS CARREGAMENTO:
 
 Essa é uma das otimizações mais bonitas do formato ELF.
 
+---
 
 # 6. Flags de permissão — R, W, E
 
@@ -659,13 +669,13 @@ objdump -p hello_64 | grep flags
 ### Como as flags de `readelf' se traduzem em proteções de memória
 
 ```
-Flag ELF    →   Proteção mmap    →   syscall mprotect
-─────────       ─────────────────    ──────────────────
-R           →   PROT_READ        →   0x1
-W           →   PROT_WRITE       →   0x2
-E           →   PROT_EXEC        →   0x4
-RW          →   PROT_READ|PROT_WRITE         → 0x3
-R E         →   PROT_READ|PROT_EXEC          → 0x5
+Flag ELF    →   Proteção mmap        →    syscall mprotect
+─────────      ─────────────────    ──────────────────
+R           →   PROT_READ            →         0x1
+W           →   PROT_WRITE           →         0x2
+E           →   PROT_EXEC            →         0x4
+RW          →   PROT_READ|PROT_WRITE       →   0x3
+R E         →   PROT_READ|PROT_EXEC        →   0x5
 RWE         →   PROT_READ|PROT_WRITE|PROT_EXEC → 0x7
 ```
 
