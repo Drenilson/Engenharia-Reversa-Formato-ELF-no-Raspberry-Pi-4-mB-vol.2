@@ -542,9 +542,12 @@ LOAD  offset=0x020dc0  VirtAddr=0x030dc0  Flags=RW
 
 A diferença corresponde à seção `.bss`.
 
+
 **Mas o que é a seção `.bss`?**
+
 `.bss` = Block Started by Symbol
 Armazena variáveis globais e estáticas NÃO inicializadas.
+
 Por padrão, em C/C++, essas variáveis devem começar com valor zero.
 
 ```c
@@ -558,17 +561,17 @@ const char* msg = "Olá"; // vai para .rodata (somente-leitura)
 
 Variáveis não inicializadas devem valer zero por padrão (em C). Mas não faz sentido armazenar milhares de zeros no arquivo em disco. Por isso o ELF usa a seguinte estratégia:
 
- `FileSiz` → Tamanho real dos dados presentes no arquivo.
+- `FileSiz` → Tamanho real dos dados presentes no arquivo.
 
- `MemSiz` → Tamanho total que a região ocupará na memória.
+- `MemSiz` → Tamanho total que a região ocupará na memória.
 
 O kernel, ao carregar o programa, faz o seguinte:
 
- Lê os FileSiz bytes do arquivo e copia para a memória.
+- Lê os FileSiz bytes do arquivo e copia para a memória.
 
- Reserva os bytes extras (MemSiz - FileSiz).
+- Reserva os bytes extras (MemSiz - FileSiz).
 
- Zera automaticamente essa área extra (a .bss).
+- Zera automaticamente essa área extra (a .bss).
 
 
 ```
