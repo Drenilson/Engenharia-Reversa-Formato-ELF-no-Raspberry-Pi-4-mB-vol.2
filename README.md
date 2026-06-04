@@ -307,7 +307,7 @@ No nosso `hello_64` temos 4 segmentos **LOAD**:
 ────────────────────────────────────────────────────
 ```
 
-Resumidamente, Os segmentos **LOAD** representam as partes reais do programa que serão copiadas para a memória. O `kernel` usa as informações de `Offset`, `VirtAddr`, `Filesz`, `Memsz` e `Flags` para decidir como e onde carregar cada parte.
+Resumidamente, s segmentos **LOAD** representam as partes reais do programa que serão copiadas para a memória. O `kernel` usa as informações de `Offset`, `VirtAddr`, `Filesz`, `Memsz` e `Flags` para decidir como e onde carregar cada parte.
 
 
 ## 4.4 DYNAMIC — Configuração do linker dinâmico
@@ -383,7 +383,7 @@ Sua **única função** é informar ao `kernel` quais permissões de memória de
 GNU_STACK com flags RW  → stack tem permissão de leitura e escrita
                           SEM execução → NX (No-eXecute) HABILITADO 
 
-GNU_STACK com flags RW**E** → stack é executável
+GNU_STACK com flags RWE → stack é executável
                           COM execução → NX DESABILITADO (perigoso em produção)
 ```
 
@@ -447,9 +447,12 @@ Kernel carrega LOAD[3] (RW) ─────────────────�
 Resultado: O atacante não consegue sobrescrever a GOT, pois ela se torna somente leitura antes do `main()` começar a executar.
 ```
 
-**RELRO Parcial vs Total**:
+**RELRO Parcial vs Total:**
+
 **RELRO Parcial** (padrão do `gcc`): Protege as seções `.dynamic` e parte da `.got`. Seu nível de proteção é **Médio**.
+
 **RELRO Total** (Full RELRO): Protege as seções `.dynamic`, `.got` (por completo) e `.got.plt`. Seu nível de proteção é **Alto**.
+
 Para CTFs e análise de exploits, saber se **RELRO** é **parcial** ou **total** é fundamental.
 
 
@@ -463,7 +466,9 @@ NOTE  0x0000000000000254  0x0000000000000254  ...
 **O que é**: A seção NOTE (ou Program Header do tipo `PT_NOTE`) é usada para armazenar informações extras que não são essenciais para a execução do programa.
 Ela funciona como um “campo de notas” do arquivo ELF.
 
+
 **O que ela contém?**
+
 As notas mais comuns são:
 - **gnu.build-id** → Um hash SHA1 único gerado durante a compilação.
 > Útil para identificar exatamente qual versão do binário é essa (muito usado em debug e símbolos remotos).
@@ -473,6 +478,7 @@ As notas mais comuns são:
 - **gnu.property** → Propriedades específicas da arquitetura (ex: suporte a BTI no ARM64, CET no x86, etc.).
 
 - **Outras notas**: informações do compilador, versão do toolchain, etc.
+
 
 **Características Importantes**
 - É **opcional** (o programa funciona normalmente sem ela).
@@ -520,20 +526,26 @@ NOTE           0x00000000000008fc 0x00000000000008fc 0x00000000000008fc
 Esta é uma das partes mais elegantes do formato ELF. Repare no último LOAD:
 
 ```
+LOAD           0x0000000000020dc0 0x0000000000030dc0 0x0000000000030dc0
+               0x0000000000000268 0x0000000000000270  RW     0x1000
+                    ↑                     ↑
+               FileSiz                MemSiz
+
+#O que estamos vendo:
 LOAD  offset=0x020dc0  VirtAddr=0x030dc0  Flags=RW
       FileSiz=0x268    MemSiz=0x270
                ↑                ↑
           no arquivo        na memória
 ```
 
-**MemSiz é maior que FileSiz.** A diferença são **8 bytes** neste caso. Por quê?
+**MemSiz é maior que FileSiz (0x270 > 0x268).** A diferença são **8 bytes** neste caso. Mas por quê isso acontece?
 
-### A seção `.bss`
+A diferença corresponde à seção `.bss`.
 
-```
-.bss = Block Started by Symbol
-     = variáveis globais/estáticas NÃO inicializadas
-```
+**Mas o que é a seção `.bss`?**
+`.bss` = Block Started by Symbol
+Armazena variáveis globais e estáticas NÃO inicializadas.
+Por padrão, em C/C++, essas variáveis devem começar com valor zero.
 
 ```c
 // Exemplo:
@@ -542,12 +554,23 @@ int valor = 42;        // vai para .data (inicializado com 42)
 const char* msg = "Olá"; // vai para .rodata (somente-leitura)
 ```
 
-**O truque**: variáveis não inicializadas devem valer zero por padrão (em C). Mas não faz sentido guardar milhares de bytes de zeros no arquivo em disco. Então o ELF faz:
+**O Truque Inteligente do ELF:**
 
-```
-No arquivo:   FileSiz bytes contêm os dados reais (.data, .got, etc.)
-Na memória:   MemSiz bytes são reservados = FileSiz + tamanho do .bss
-              Os bytes extras (o .bss) são zerados pelo kernel automaticamente
+Variáveis não inicializadas devem valer zero por padrão (em C). Mas não faz sentido armazenar milhares de zeros no arquivo em disco. Por isso o ELF usa a seguinte estratégia:
+
+ `FileSiz` → Tamanho real dos dados presentes no arquivo.
+
+ `MemSiz` → Tamanho total que a região ocupará na memória.
+
+O kernel, ao carregar o programa, faz o seguinte:
+
+ Lê os FileSiz bytes do arquivo e copia para a memória.
+
+ Reserva os bytes extras (MemSiz - FileSiz).
+
+ Zera automaticamente essa área extra (a .bss).
+
+
 ```
 
 ```
