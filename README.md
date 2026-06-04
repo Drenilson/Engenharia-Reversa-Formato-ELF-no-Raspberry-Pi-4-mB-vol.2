@@ -624,11 +624,11 @@ Feita a observação, vamos continuar...
 │  E    │  Executable — pode ser executado como código             │
 └─────────────────────────────────────────────────────────
 
-**Combinações mais comuns:**
-  **R**     → somente leitura (headers, metadados, .rodata). - **Muito Seguro**
-  **R E**   → leitura + execução (.text, código do programa). - **Seguro**
-  **RW**    → leitura + escrita (.data, .bss, .got, stack) - **Seguro**
-  **RWE**   → tudo liberado ← RARO e perigoso (stack executável) - **Perigoso**
+Combinações mais comuns:
+  R     → somente leitura (headers, metadados, .rodata). - Muito Seguro
+  R E   → leitura + execução (.text, código do programa). - Seguro
+  RW    → leitura + escrita (.data, .bss, .got, stack) - Seguro
+  RWE   → tudo liberado ← RARO e perigoso (stack executável) - Perigoso
 ```
 
 **Diferença de notação entre `readelf` e `objdump`:**
