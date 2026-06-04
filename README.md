@@ -245,7 +245,7 @@ INTERP  0x0000000000000238  0x0000000000000238  ...
     [Requesting program interpreter: /lib/ld-linux-aarch64.so.1]
 ```
 
-**O que é**: Abreviação de *Interpreter*, é uma das primeiras seções de um binário ELF executável. Ela contém o caminho (string) do **dynamic linker** (também chamado de interpretador do programa), que será usado pelo kernel para carregar as bibliotecas `.so` que seu executável precisa.
+**O que é**: INTERP (abreviação de *Interpreter*), é uma das primeiras seções de um binário ELF executável. Ela contém o caminho (string) do **dynamic linker** (também chamado de interpretador do programa), que será usado pelo kernel para carregar as bibliotecas `.so` que seu executável precisa.
 
 ```
 Arquivo ELF
@@ -609,8 +609,12 @@ Essa é uma das otimizações mais bonitas do formato ELF.
 
 # 6. Flags de permissão — R, W, E
 
-Uma confusão muito comum: o `readelf` usa a letra **`E`** para executável, **não `X`**.
+Começamos esse tópico esclarecendo uma confusão muito comum: o `readelf` usa a letra **`E`** para executável, **não `X`**.
 
+
+Feita a observação, vamos continuar...
+
+**Significado das Flags:**
 ```
 ┌─────────────────────────────────────────────────────────
 │  Flag │  Significado                                             │
@@ -620,22 +624,30 @@ Uma confusão muito comum: o `readelf` usa a letra **`E`** para executável, **n
 │  E    │  Executable — pode ser executado como código             │
 └─────────────────────────────────────────────────────────
 
-Combinações típicas:
-  R     → somente leitura (headers, metadados, .rodata)
-  R E   → leitura + execução (.text, código do programa)
-  RW    → leitura + escrita (.data, .bss, .got, stack)
-  RWE   → tudo liberado ← RARO e perigoso (stack executável)
+**Combinações mais comuns:**
+  **R**     → somente leitura (headers, metadados, .rodata). - **Muito Seguro**
+  **R E**   → leitura + execução (.text, código do programa). - **Seguro**
+  **RW**    → leitura + escrita (.data, .bss, .got, stack) - **Seguro**
+  **RWE**   → tudo liberado ← RARO e perigoso (stack executável) - **Perigoso**
 ```
 
-> **Atenção**: o `objdump -p` usa notação diferente — letras minúsculas com hífen para ausência: `r-x`, `rw-`, `r--`. Não confunda as duas ferramentas.
+**Diferença de notação entre `readelf` e `objdump`:**
 
+`readelf` e `objdump` mostram as mesmas permissões, mas usam notações diferentes:
+- `readelf` → Usa letras maiúsculas e espaços:
+ - `R E` ou `RW`
+- `objdump` → Usa letras minúsculas com hífen (-) para indicar ausência:
+ - `r-x` (equivalente a R E)
+ - `rw-` (equivalente a RW)
+ - `r--` (equivalente a R)
+
+**Exemplo prático:**
 ```bash
-# readelf: flags com letras maiúsculas, espaço entre presentes
-readelf -l hello_64 | grep "Flags\|R E\|RW\| R "
+// readelf: flags com letras maiúsculas, espaço entre presentes
+readelf -l hello_64 | grep Flags
 
-# objdump: flags com letras minúsculas, hífen para ausentes
-objdump -p hello_64 | grep "flags"
-# Saída: "flags r-x"  ou  "flags rw-"
+// objdump: flags com letras minúsculas, hífen para ausentes
+objdump -p hello_64 | grep flags
 ```
 
 ### Como as flags se traduzem em proteções de memória
@@ -650,6 +662,8 @@ RW          →   PROT_READ|PROT_WRITE         → 0x3
 R E         →   PROT_READ|PROT_EXEC          → 0x5
 RWE         →   PROT_READ|PROT_WRITE|PROT_EXEC → 0x7
 ```
+
+> Em resumo as flags definem o que o processador e o kernel podem fazer com cada segmento de memória. Entendê-las é essencial para analisar proteções como NX, RELRO e identificar possíveis vulnerabilidades.
 
 ---
 
