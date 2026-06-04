@@ -388,12 +388,15 @@ GNU_STACK com flags RWE → stack é executável
 ```
 
 **Por que isso importa em segurança?**
+
 Antes da proteção **NX**, exploits clássicos de *buffer overflow* funcionavam assim:
  1. Sobrescrever o endereço de retorno na **stack**;
  2. Injetar shellcode na própria stack;
  3. Redirecionar a execução para o shellcode.
 O `GNU_STACK` com flags `RW` ativa o **NX** (equivalente ao DEP no Windows), tornando a **stack** não executável.
+
 Se você encontrar um binário com `RWE`, ele permite execução na **stack** e isso é um grande sinal vermelho em análise de malware ou binários suspeitos.
+
 
 **Verificar se NX está habilitado:**
 ```bash
@@ -423,11 +426,14 @@ GNU_RELRO  0x0000000000020dc0  0x0000000000030dc0  ...
 ```
 
 **O que é**: O segmento **GNU_RELRO** (Relocation Read-Only) é uma proteção de segurança que torna certas regiões da memória **somente-leitura** após o **dynamic linker** terminar seu trabalho.
+
 Durante o carregamento do programa:
  1. O kernel carrega a região como `RW` (Read + Write).
  2. O **dynamic linker** (`ld.so`) preenche as tabelas de relocação (`.got`, `.dynamic`, etc.).
  3. Depois de terminar, ele chama `mprotect()` para mudar a permissão para `R` (Read-Only).
+
 Isso impede que um atacante sobrescreva essas tabelas importantes mesmo que consiga uma vulnerabilidade de escrita arbitrária.
+
 
 > Em poucas palavras, o **GNU_RELRO** transforma partes críticas da memória (`RW`) em somente-leitura (`R`) depois que o linker termina as relocações. É uma das proteções mais importantes contra redirecionamento de fluxo (control-flow hijacking).
 
@@ -463,8 +469,7 @@ NOTE  0x0000000000000254  0x0000000000000254  ...
       0x0000000000000024  0x0000000000000024   R  0x4
 ```
 
-**O que é**: A seção NOTE (ou Program Header do tipo `PT_NOTE`) é usada para armazenar informações extras que não são essenciais para a execução do programa.
-Ela funciona como um “campo de notas” do arquivo ELF.
+**O que é**: A seção NOTE (ou Program Header do tipo `PT_NOTE`) é usada para armazenar informações extras que não são essenciais para a execução do programa funcionando como um “campo de notas” do arquivo ELF.
 
 
 **O que ela contém?**
@@ -531,7 +536,9 @@ LOAD           0x0000000000020dc0 0x0000000000030dc0 0x0000000000030dc0
                     ↑                     ↑
                FileSiz                MemSiz
 
-#O que estamos vendo:
+
+// O que estamos vendo:
+
 LOAD  offset=0x020dc0  VirtAddr=0x030dc0  Flags=RW
       FileSiz=0x268    MemSiz=0x270
                ↑                ↑
@@ -545,8 +552,7 @@ A diferença corresponde à seção `.bss`.
 
 **Mas o que é a seção `.bss`?**
 
-`.bss` = Block Started by Symbol
-Armazena variáveis globais e estáticas NÃO inicializadas.
+`.bss` = *Block Started by Symbol*. Armazena variáveis globais e estáticas NÃO inicializadas.
 
 Por padrão, em C/C++, essas variáveis devem começar com valor zero.
 
@@ -590,14 +596,16 @@ ARQUIVO EM DISCO:                    MEMÓRIA APÓS CARREGAMENTO:
                                      (8 bytes extras = zeros)
 ```
 
-> **Isso economiza espaço em disco**: um binário com `int buffer[1000000];` global não precisará de 4 MB no arquivo, apenas uma entrada no .bss dizendo "reserve 4 MB de zeros aqui".
+> **Isso economiza espaço em disco**: um binário com `int buffer[1000000]` global não precisará de 4 MB no arquivo, apenas uma entrada no `.bss` dizendo "reserve 4 MB de zeros aqui".
 
 
 **Resumo:**
-FileSiz = o que realmente existe no arquivo.
-MemSiz = o que deve existir na memória (FileSiz + tamanho do .bss).
-O kernel zera automaticamente a .bss durante o carregamento.
+- FileSiz = o que realmente existe no arquivo.
+- MemSiz = o que deve existir na memória (FileSiz + tamanho do .bss).
+- O kernel zera automaticamente a `.bss` durante o carregamento.
+
 Essa é uma das otimizações mais bonitas do formato ELF.
+
 
 # 6. Flags de permissão — R, W, E
 
