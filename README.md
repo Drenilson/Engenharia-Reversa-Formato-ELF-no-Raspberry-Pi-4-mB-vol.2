@@ -660,11 +660,13 @@ Combinações mais comuns:
 **Exemplo prático:**
 ```bash
 // readelf: flags com letras maiúsculas, espaço entre presentes
-readelf -l hello_64 | grep Flags
+readelf -l hello_64 | grep -A1 -E "LOAD|GNU_STACK|GNU_RELRO"
 
 // objdump: flags com letras minúsculas, hífen para ausentes
-objdump -p hello_64 | grep flags
+objdump -p hello_64 | grep -E "flags"
 ```
+
+> Aqui vemos nitidamente a diferença entre os dois, principalmente no que se refere à identificação do executável onde em `readelf` ele é identificado com a letra **`E`**, enquanto que `objdump` entrega o executável representado com a letra **`x`**
 
 ### Como as flags de `readelf' se traduzem em proteções de memória
 
