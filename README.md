@@ -738,8 +738,18 @@ Execução 2:
 → Muito mais difícil de explorar    → Fácil de prever e atacar
 ```
 
+**Entendendo um pouco mais...**
+
+**ASLR** (*Address Space Layout Randomization* — *Aleatorização do Layout do Espaço de Endereços*) é uma técnica de proteção usada pelo sistema operacional (**kernel**) para tornar imprevisíveis os endereços de memória onde o programa é carregado.
+
+Sem **ASLR**, os endereços de memória são fixos (**previsíveis**). Um atacante que descubra um endereço útil (ex: uma função ou um buffer) pode usá-lo em todos os ataques. O **ASLR** quebra essa previsibilidade.
+
+Então, quando o `VirtAddr` começa em `0x0`, significa que o binário aceita ser carregado em qualquer lugar (base aleatória). É exatamente isso que permite o ASLR funcionar bem.
+
+
 > **Para análise e CTFs**: `hello_nopie` é mais fácil de analisar porque os endereços são sempre os mesmos. Em produção, prefira PIE. A combinação PIE + ASLR é uma proteção relevante contra ataques de memória.
 
+---
 
 # 8. Como o kernel carrega o ELF na memória
 
