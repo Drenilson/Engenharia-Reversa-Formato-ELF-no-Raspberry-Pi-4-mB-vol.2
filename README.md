@@ -695,8 +695,8 @@ gcc -o hello_pie    hello.c           # PIE (padrão)
 gcc -no-pie -o hello_nopie hello.c   # Endereços fixos
 
 # Comparar os VirtAddr
-readelf -l hello_pie   | grep "LOAD"
-readelf -l hello_nopie | grep "LOAD"
+readelf -l hello_pie   | grep -A1 "LOAD"
+readelf -l hello_nopie | grep -A1 "LOAD"
 ```
 
 ```
@@ -720,21 +720,22 @@ no-PIE (hello_nopie):
 ```
 
 ```
-┌───────────────────────────────────────────────────────────
-│              PIE  vs  no-PIE na memória virtual                     │
-│                                                                     │
-│  PIE (com ASLR):          no-PIE (sem ASLR):                        │
-│                                                                     │
-│  Execução 1:              Toda execução:                            │
-│  base = 0x5566ab000000    base = 0x0000000000400000                 │
-│  .text em 0x5566ab010000  .text em 0x0000000000401000               │
-│                                                                     │
-│  Execução 2:              Previsível → mais fácil de explorar      
-│  base = 0x7f3c12000000                                              │
-│  .text em 0x7f3c12010000                                            │
-│                                                                     │
-│  Imprevisível → mais difícil de explorar                           
-└───────────────────────────────────────────────────────────
+Memória Virtual
+
+PIE (com ASLR)                          No-PIE (endereços fixos)
+────────────────────                    ─────────────────────
+Execução 1:                             Toda execução:
+  Base   = 0x55abc0000000                 Base   = 0x400000
+  .text  = 0x55abc0010000                 .text  = 0x401000
+  .data  = 0x55abc0020000                 .data  = 0x402000
+
+Execução 2:
+  Base   = 0x7f3c12000000
+  .text  = 0x7f3c12010000
+  .data  = 0x7f3c12020000
+
+→ Endereços mudam toda vez          → Endereços sempre iguais
+→ Muito mais difícil de explorar    → Fácil de prever e atacar
 ```
 
 > **Para análise e CTFs**: `hello_nopie` é mais fácil de analisar porque os endereços são sempre os mesmos. Em produção, prefira PIE. A combinação PIE + ASLR é uma proteção relevante contra ataques de memória.
