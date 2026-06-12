@@ -97,9 +97,10 @@ LANG=C readelf -l hello_64
 - A presença de exatamente um INTERP apontando para `/lib/ld-linux-aarch64.so.1`
 - Os LOADs com flags `R`, `R E` e `RW` — sempre nessa separação
 - O `GNU_STACK` com `RW` (sem `E`) indicando NX habilitado
+
 Se sua saída tiver **mais segmentos NOTE, um GNU_EH_FRAME separado, ou um número diferente de entradas no mapeamento**, isso é completamente normal. Acompanhe o raciocínio, não os números.
 
-**Saída de exemplo (Raspberry Pi 4, ARM64, GCC 12, Raspberry Pi OS Bookworm:**
+**Saída de exemplo (Raspberry Pi 4, ARM64, GCC 12, Raspberry Pi OS Bookworm):**
 
 ```bash
 Elf file type is DYN (Position-Independent Executable file)
@@ -204,7 +205,8 @@ O kernel e o dynamic linker precisam saber rapidamente:
 - Onde cada segmento começa no arquivo;
 - Quais são as permissões de memória (R, W, X);
 - Onde carregá-los na memória.
-A tabela PHDR é a "índice" principal do arquivo ELF
+
+Em outras palavras, a tabela PHDR é o "índice" principal do arquivo ELF
 
 ```
 Arquivo ELF
@@ -244,7 +246,7 @@ Arquivo ELF
 ## 4.2 INTERP — O intérprete do programa
 
 ```
-INTERP  0x0000000000000238  0x0000000000000238  ...
+INTERP  0x0000000000000238  0x0000000000000238   0x0000000000000238
         0x000000000000001b  0x000000000000001b   R   0x1
     [Requesting program interpreter: /lib/ld-linux-aarch64.so.1]
 ```
