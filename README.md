@@ -753,126 +753,117 @@ Então, quando o `VirtAddr` começa em `0x0`, significa que o binário aceita se
 
 # 8. Como o kernel carrega o ELF na memória
 
-Agora que entendemos todos os segmentos, vamos ver o processo completo — da chamada `execve()` até a execução do `main()`. Esta é a sequência mais importante deste volume.
+Agora que conhecemos os principais componentes do ELF (headers, segmentos LOAD, INTERP, DYNAMIC, RELRO, etc.), vamos ver o fluxo completo de execução — desde o momento em que você digita ./hello_64 no terminal até a função main() começar a rodar.
 
-## A sequência completa
+## Jornada Completa: ./hello_64 do Shell até o main()
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  JORNADA DE ./hello_64 DO SHELL ATÉ O main()                           │
-└─────────────────────────────────────────────────────────────┘
-
-  Você digita: ./hello_64
+# Você digita no terminal:
+./hello_64
         │
         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Shell (bash/zsh) │  chama a syscall execve("./hello_64", argv, envp)
-└─────────┬───────────────────────────────────────────────────┘
-            │  syscall execve = ARM64 syscall nº 221 (0xDD)
-            ▼
-┌─────────────────────────────────────────────────────────────
-│                         KERNEL LINUX                                  │
-│                                                                       │
-│  PASSO 1: Lê os primeiros bytes → verifica magic 7F 45 4C 46        
-│           Confirma: é um ELF válido                                   │
-│                                                                       │
-│  PASSO 2: Lê o ELF Header → descobre e_phoff e e_phnum               
-│           Encontra a Program Header Table                             │
-│                                                                       │
-│  PASSO 3: Varre os Program Headers                                    │
-│           ├── Acha PT_INTERP → lê caminho do dynamic linker          │
-│           │   (/lib/ld-linux-aarch64.so.1)                            │
-│           └── Acha todos os PT_LOAD do binário principal              
-│                                                                       │
-│  PASSO 4: Mapeia os PT_LOAD do binário na memória virtual            
-│           usando mmap() internamente                                  │
-│           ├── LOAD[0] (R)   → mapeado como somente-leitura           │
-│           ├── LOAD[1] (R E) → mapeado como leitura + execução        │
-│           ├── LOAD[2] (R)   → mapeado como somente-leitura           │
-│           └── LOAD[3] (RW)  → mapeado como leitura + escrita         │
-│               (MemSiz > FileSiz → bytes extras = zeros para .bss)    
-│                                                                       │
-│  PASSO 5: Abre e lê o ELF do dynamic linker                           │
-│           (/lib/ld-linux-aarch64.so.1)                                │
-│           Mapeia os PT_LOADs do ld.so na memória                      │
-│                                                                       │
-│  PASSO 6: Monta a stack inicial do processo                           │
-│           ├── argc, argv[], envp[]                                   
-│           └── auxv (auxiliary vector):                               
-│               AT_PHDR   → endereço da Phdr Table na memória          │
-│               AT_PHENT  → tamanho de cada Phdr entry                 │
-│               AT_PHNUM  → número de Phdr entries                     │
-│               AT_ENTRY  → entry point do binário principal           │
-│               AT_BASE   → base address do ld.so                      │
-│               AT_RANDOM → 16 bytes aleatórios (para stack canary)    │
-│                                                                       │
-│  PASSO 7: Transfere controle para o entry point do ld.so              │
-│           (não para o entry point do programa ainda!)                 │
-└─────────────────────────────────────────────────────────────
-          │
-          ▼
-┌─────────────────────────────────────────────────────────────
-│                  DYNAMIC LINKER (ld-linux-aarch64.so.1)               │
-│                                                                       │
-│  PASSO 8: Lê o segmento PT_DYNAMIC do binário principal               │
-│           ├── Lê entradas NEEDED → descobre: precisa de libc.so.6    │
-│           └── Localiza e mapeia libc.so.6 (e outras .so necessárias)  
-│                                                                       │
-│  PASSO 9: Resolve relocações (preenche a GOT)                         │
-│           Para cada função externa (ex: printf):                      │
-│           ├── Encontra o endereço real de printf na libc.so.6        
-│           └── Escreve esse endereço na GOT                           
-│                                                                       │
-│  PASSO 10: Aplica proteção GNU_RELRO                                  │
-│            Chama mprotect() → .dynamic e .got → somente-leitura (R)  
-│                                                                       │
-│  PASSO 11: Chama funções de inicialização (.init, .init_array)        │
-│            Configurações globais (ex: construtores C++)               │
-│                                                                       │
-│  PASSO 12: Salta para o entry point do binário principal              │
-│            (o endereço em e_entry do ELF Header)                      │
-└─────────────────────────────────────────────────────────────
-          │
-          ▼
-┌─────────────────────────────────────────────────────────────
-│                      BINÁRIO PRINCIPAL                                │
-│                                                                       │
-│  PASSO 13: Executa _start  (gerado pelo GCC/libc)                     │
-│            ├── Configura o ambiente C (locale, etc.)                 
-│            └── Chama __libc_start_main()                             
-│                                                                       │
-│  PASSO 14: __libc_start_main()                                        │
-│            ├── Registra atexit() handlers                             
-│            └── Chama main(argc, argv, envp)                           
-│                                                                       │
-│  PASSO 15: main() executa seu código                                  │
-│            printf("Olá, ELF!\n")                                      │
-│            return 0  
-│                                                                       │
-│  PASSO 16: __libc_start_main chama exit()                             │
-│            ├── Chama funções de finalização (.fini, .fini_array)      
-│            └── syscall exit_group() → processo termina               
-└────────────────────────────────────────────────────────────┘
+# Shell (bash/zsh) chama a syscall:
+execve("./hello_64", argv, envp)
+        │
+        ▼
+# KERNEL LINUX
+PASSO 1: Validação inicial
+   → Lê os primeiros 4 bytes (Magic Number)
+   → Verifica se é 7F 45 4C 46 → "É um ELF válido"
+
+PASSO 2: Lê o ELF Header
+   → Descobre:
+        • e_entry      → endereço inicial de execução
+        • e_phoff      → onde está a Program Header Table
+        • e_phnum      → quantos Program Headers existem
+
+PASSO 3: Lê a Program Header Table
+   → Encontra PT_INTERP → carrega o dynamic linker
+         (/lib/ld-linux-aarch64.so.1)
+   → Encontra todos os PT_LOAD (os segmentos que serão mapeados)
+
+PASSO 4: Mapeamento dos segmentos na memória
+   → Para cada PT_LOAD:
+        • Usa mmap() internamente
+        • Aplica as flags de permissão (R, R E, RW)
+        • Se MemSiz > FileSiz → zera a diferença (seção .bss)
+
+PASSO 5: Prepara a stack inicial do processo
+   → Coloca argc, argv[], envp[]
+   → Coloca o Auxiliary Vector (auxv) — informações cruciais para o linker
+
+PASSO 6: Transfere controle para o dynamic linker
+   → Pula para o entry point do ld-linux-aarch64.so.1
+        │
+        ▼
+PASSO 7: Inicialização do linker
+   → Lê o segmento PT_DYNAMIC do binário principal
+
+PASSO 8: Carrega bibliotecas
+   → Lê entradas NEEDED → carrega libc.so.6 e outras .so
+
+PASSO 9: Resolução de símbolos (Relocações)
+   → Preenche a Global Offset Table (GOT)
+   → Resolve endereços reais de funções (printf, malloc, etc.)
+
+PASSO 10: Proteções de segurança
+   → Aplica RELRO → marca .got e .dynamic como somente leitura
+   → Verifica GNU_STACK (ativa NX se necessário)
+
+PASSO 11: Inicialização
+   → Executa construtores (.init_array)
+
+PASSO 12: Transfere controle para o programa
+   → Pula para o e_entry do binário principal
+        │
+        ▼
+PASSO 13: _start (código de inicialização)
+   → Configura ambiente C
+   → Chama __libc_start_main()
+
+PASSO 14: __libc_start_main()
+   → Registra funções de finalização (atexit)
+   → Chama main(argc, argv, envp)
+
+PASSO 15: main()
+   → Seu código executa normalmente
+   → Exemplo: printf("Olá, ELF!\n")
+
+PASSO 16: Finalização
+   → Retorna de main()
+   → Chama funções de finalização (.fini_array)
+   → Chama exit() → syscall exit_group()
 ```
 
 ### Por que o kernel não chama main() diretamente?
 
+Porque main() é uma convenção da linguagem C, e não uma regra do sistema operacional.
+O kernel Linux só sabe de uma coisa:
 ```
-Porque main() é uma convenção do C, não do sistema operacional.
-
-O kernel só entende: "execute a partir deste endereço (e_entry)."
-Quem chama main() é o runtime da libc (__libc_start_main).
-Quem chama __libc_start_main é o _start.
-Quem chama _start é o kernel (via e_entry).
-
-Kernel → _start → __libc_start_main → main()
+"execute a partir deste endereço (e_entry)."
 ```
 
+Todo o resto é responsabilidade do runtime da libc.
+```
+Fluxo real de inicialização:
 
-## O auxv — o bilhete secreto do kernel para o ld.so
+Kernel 
+   ↓
+_start          ← Entry point definido no ELF Header
+   ↓
+__libc_start_main()
+   ↓
+main()          ← Sua função
+```
 
-O kernel passa informações cruciais para o dynamic linker através do **auxiliary vector (auxv)**, colocado na stack antes da execução começar.
+- `_start`: Código de inicialização gerado pelo GCC/libc.
+- `__libc_start_main()`: Configura o ambiente C, registra funções de finalização e chama `main()`.
+- Ao final de `main()`, o controle volta para `__libc_start_main()`, que chama `exit()`.
 
+
+## O auxv —O “bilhete secreto” do kernel para o dynamic linker
+
+Antes de passar o controle para o ld.so, o kernel coloca na stack um conjunto de informações chamado Auxiliary Vector (auxv). São dados importantes que o dynamic linker precisa para funcionar corretamente.
 ```bash
 # Ver o auxv do seu processo
 LD_SHOW_AUXV=1 ./hello_64
