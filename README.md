@@ -39,11 +39,12 @@ No Volume 1 você aprendeu que o ELF tem **seções** (`.text`, `.data`, `.rodat
 ┌───────────────────────────────────────────────────────────
 │               AS DUAS VISÕES DO ARQUIVO ELF                         │
 ├───────────────────────────────────────────────────────────
-│  VISÃO DO LINKER         │  VISÃO DO KERNEL / LOADER                │
+│  VISÃO DO LINKER         │  VISÃO DO KERNEL E DO DYNAMIC LINKER     │
 │  (tempo de compilação)   │  (tempo de execução)                     │
 ├───────────────────────────────────────────────────────────
 │  Usa: Section Headers    │  Usa: Program Headers                    │
-│  Unidade: Seção          │  Unidade: Segmento                       │.
+│  (tempo de compilação)   │  (tempo de execução)                     │
+│  Unidade: Seção          │  Unidade: Segmento                       │
 │  Ex: .text, .data, .bss  │  Ex: LOAD, DYNAMIC, INTERP               │
 │                          │                                          │
 │  Responde: "onde estão   │  Responde: "o que precisa ser            │
@@ -755,7 +756,7 @@ Então, quando o `VirtAddr` começa em `0x0`, significa que o binário aceita se
 
 # 8. Como o kernel carrega o ELF na memória
 
-Agora que conhecemos os principais componentes do ELF (headers, segmentos LOAD, INTERP, DYNAMIC, RELRO, etc.), vamos ver o fluxo completo de execução — desde o momento em que você digita ./hello_64 no terminal até a função main() começar a rodar.
+Agora que conhecemos os principais componentes do ELF (headers, segmentos LOAD, INTERP, DYNAMIC, RELRO, etc.), vamos ver o fluxo completo de execução, desde o momento em que você digita **./hello_64 no terminal** até a função `main()` começar a rodar.
 
 ## Jornada Completa: ./hello_64 do Shell até o main()
 
@@ -769,69 +770,69 @@ execve("./hello_64", argv, envp)
         │
         ▼
 # KERNEL LINUX
-PASSO 1: Validação inicial
+# PASSO 1: Validação inicial
    → Lê os primeiros 4 bytes (Magic Number)
    → Verifica se é 7F 45 4C 46 → "É um ELF válido"
 
-PASSO 2: Lê o ELF Header
+# PASSO 2: Lê o ELF Header
    → Descobre:
         • e_entry      → endereço inicial de execução
         • e_phoff      → onde está a Program Header Table
         • e_phnum      → quantos Program Headers existem
 
-PASSO 3: Lê a Program Header Table
+# PASSO 3: Lê a Program Header Table
    → Encontra PT_INTERP → carrega o dynamic linker
          (/lib/ld-linux-aarch64.so.1)
    → Encontra todos os PT_LOAD (os segmentos que serão mapeados)
 
-PASSO 4: Mapeamento dos segmentos na memória
+# PASSO 4: Mapeamento dos segmentos na memória
    → Para cada PT_LOAD:
         • Usa mmap() internamente
         • Aplica as flags de permissão (R, R E, RW)
         • Se MemSiz > FileSiz → zera a diferença (seção .bss)
 
-PASSO 5: Prepara a stack inicial do processo
+# PASSO 5: Prepara a stack inicial do processo
    → Coloca argc, argv[], envp[]
    → Coloca o Auxiliary Vector (auxv) — informações cruciais para o linker
 
-PASSO 6: Transfere controle para o dynamic linker
+# PASSO 6: Transfere controle para o dynamic linker
    → Pula para o entry point do ld-linux-aarch64.so.1
         │
         ▼
-PASSO 7: Inicialização do linker
+# PASSO 7: Inicialização do linker
    → Lê o segmento PT_DYNAMIC do binário principal
 
-PASSO 8: Carrega bibliotecas
+# PASSO 8: Carrega bibliotecas
    → Lê entradas NEEDED → carrega libc.so.6 e outras .so
 
-PASSO 9: Resolução de símbolos (Relocações)
+# PASSO 9: Resolução de símbolos (Relocações)
    → Preenche a Global Offset Table (GOT)
    → Resolve endereços reais de funções (printf, malloc, etc.)
 
-PASSO 10: Proteções de segurança
+# PASSO 10: Proteções de segurança
    → Aplica RELRO → marca .got e .dynamic como somente leitura
    → Verifica GNU_STACK (ativa NX se necessário)
 
-PASSO 11: Inicialização
+# PASSO 11: Inicialização
    → Executa construtores (.init_array)
 
-PASSO 12: Transfere controle para o programa
+# PASSO 12: Transfere controle para o programa
    → Pula para o e_entry do binário principal
         │
         ▼
-PASSO 13: _start (código de inicialização)
+# PASSO 13: _start (código de inicialização)
    → Configura ambiente C
    → Chama __libc_start_main()
 
-PASSO 14: __libc_start_main()
+# PASSO 14: __libc_start_main()
    → Registra funções de finalização (atexit)
    → Chama main(argc, argv, envp)
 
-PASSO 15: main()
+# PASSO 15: main()
    → Seu código executa normalmente
    → Exemplo: printf("Olá, ELF!\n")
 
-PASSO 16: Finalização
+# PASSO 16: Finalização
    → Retorna de main()
    → Chama funções de finalização (.fini_array)
    → Chama exit() → syscall exit_group()
@@ -895,6 +896,42 @@ AT_PLATFORM:     aarch64          ← plataforma
 
 > **Exercício**: compare o `AT_ENTRY` com o `e_entry` do `readelf -h`. São iguais? Devem ser, com o deslocamento da base ASLR somado.
 
+---
+
+## Linker, Loader e Dynamic Linker
+
+Antes de continuar, vale esclarecer uma dúvida comum.
+
+Embora os nomes sejam parecidos, Linker, Loader e Dynamic Linker são componentes diferentes e atuam em momentos distintos:
+```
+|         Componente          |     Quando atua      |                                Função                                |
+|-----------------------------|----------------------|----------------------------------------------------------------------|
+| Linker (`ld`)               | Durante a compilação | Une arquivos objeto (`.o`), resolve símbolos e gera o executável ELF |
+| Loader (Kernel)             | Durante a execução   | Lê o ELF, mapeia segmentos na memória e cria o processo              |
+| Dynamic Linker (`ld-linux`) | Durante a execução   | Carrega bibliotecas compartilhadas e resolve símbolos dinâmicos      |
+
+Fluxo resumido:
+
+Código-fonte
+↓
+Compilador
+↓
+Arquivos .o
+↓
+Linker
+↓
+Executável ELF
+↓
+Kernel (Loader)
+↓
+Dynamic Linker
+↓
+_start
+↓
+main()
+```
+
+> Observação: o segmento `PT_INTERP` não contém o Dynamic Linker. Ele contém apenas o caminho para ele, normalmente `/lib/ld-linux-aarch64.so.1`.
 
 # 9. Observando a memória em tempo real
 
